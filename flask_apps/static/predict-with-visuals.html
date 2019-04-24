@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>deeplizard predict image app</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dc/3.0.4/dc.css">
+    <style>
+        * { font-size:30px; }
+    </style>
+</head>
+<body>
+    <input id="image-selector" type="file">
+    <button id="predict-button">Predict</button>
+    <div>
+        <div id="row-chart"></div>
+        <div id="pie-chart"></div>
+    </div>
+    <img id="selected-image" style="clear:both;display:block;"  src=""/>
+    
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crossfilter/1.3.12/crossfilter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dc/3.0.3/dc.min.js"></script>
+    <script>
+        let base64Image;
+        $("#image-selector").change(function() {
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let dataURL = reader.result;
+                $('#selected-image').attr("src", dataURL);
+                base64Image = dataURL.replace("data:image/png;base64,","");
+                console.log(base64Image);
+            }
+            reader.readAsDataURL($("#image-selector")[0].files[0]);
+            $("#row-chart").empty();
+            $("#pie-chart").empty();
+        });
+        
+        $("#predict-button").click(function(){
+            let message = {
+                image: base64Image
+            }
+            console.log(message);
+            $.post("http://10.0.0.4:5000/predict", JSON.stringify(message), function(response){
+                
+                let predictions = Object.entries(response.prediction).map(function(entry) {
+                    return {
+                        category: entry[0],
+                        value: entry[1]
+                    };
+                });
+                
+                console.log("response.prediction originally looks like this:")
+                console.log(response.prediction)
+                console.log("response.prediction is then transformed to the predictions object, " +
+                            "which looks like this:")
+                console.log(predictions)
+                
+                let cf = crossfilter(predictions);
+                let category = cf.dimension(p => p.category);
+                
+                dc.rowChart("#row-chart")
+                    .dimension(category)
+                    .group(category.group().reduceSum(p => p.value))
+                
+                dc.pieChart("#pie-chart")
+                    .dimension(category)
+                    .group(category.group().reduceSum(p => p.value))
+
+                dc.renderAll();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>deeplizard greeting app</title>
+    <style>
+        * {
+            font-size:30px;
+        }
+    </style>
+</head>
+<body>
+    <input id="name-input" type="text"/>
+    <button id="name-button">Submit Name</button>
+    <p id="greeting"></p>
+    
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script>
+        $("#name-button").click(function(event){
+            let message = {
+                name: $("#name-input").val()
+            }
+            $.post("http://10.0.0.4:5000/hello", JSON.stringify(message), function(response){
+                $("#greeting").text(response.greeting);
+                console.log(response);
+            });
+        });
+    </script>
+</body>
+</html>
